@@ -17,10 +17,9 @@ Algorithm:
 4 bytes for piece
 4 byte for block offset
 rest is for the data itself...
-
 """
+
 file = [bytes([0, 1, 2, 3, 4, 5]) * 21230]
-print(len(file[0]))
 my_addr = ("127.0.0.1", 1234)
 
 TYPES = {
@@ -53,22 +52,30 @@ def create_data_msg(data, trans_id, piece_index, block_offset, block_length):
     return struct.pack('i b b i i i', 4 + 1 + 1 + 4 + 4 + 4 + len(data) + 1, trans_id, TYPES["PIECE"], piece_index, block_offset, block_length) + data
 
 
+async def parse_init_msg(msg, addr):
+    ip_table = []
+    offset = len(ip_table)
+    if addr[0] not in ip_table:
+        offset += 1
+        ip_table.append(addr[0])
+
+
+    if msg == b'bittorrent':
+        return (struct.pack('! b', offset), None)
+    
+    public_pem = msg[10:]
+    return (struct.pack('! b', offset) + public_pem, public_pem)
 
 
 async def listen():
     print("starting connection")
     conn_with_peer = await aioudp.open_local_endpoint(*my_addr)
-    ip_table = []
-    offset = len(ip_table)
 
     msg, addr = await conn_with_peer.receive()
-    print(msg, addr)
 
-    if addr[0] not in ip_table:
-        offset += 1
-        ip_table.append(addr[0])
-
-    conn_with_peer.send(bytes(offset), addr)
+    resp, public_key = parse_init_msg(msg, addr)
+    conn_with_peer.send(resp, addr)
+    
 
     sleep_cntr = 1
     while True:

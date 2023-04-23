@@ -34,7 +34,16 @@ def build_piece_into_file(data, offset, block_length):
         print(file)
         print("finished")
         exit(1)
-async def init_conn():
+
+
+async def generate_init_msg(public_pem = None):
+    if not public_pem:
+        return b'bittorrent'
+    
+    return b'bittorrent' + public_pem
+    
+
+async def main():
     BLOCK_SIZE = 0xfff
     block_offset = 0
 
@@ -72,4 +81,4 @@ async def init_conn():
         await asyncio.sleep(0.001)
 
 
-asyncio.run(init_conn())
+asyncio.run(main())
